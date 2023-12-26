@@ -13,7 +13,7 @@ COLLISION_REWARD = -10
 WIN_REWARD = 10
 FPS = 15
 OBSTACLES_COLOR = (100, 100, 100)
-GOAL_COLOR = (0, 100, 0)
+GOAL_COLOR = (0, 150, 0)
 AGENT_COLOR = (0, 150, 150)
 MAP = 'miniborders'
 
@@ -120,7 +120,7 @@ class TrainingEnv(gymnasium.Env):
             board = self.img.copy()
             cv2.rectangle(board, (self.goal[0] * 22 + 1, self.goal[1] * 22 + 1),
                           (self.goal[0] * 22 + 22 - 1, self.goal[1] * 22 + 22 - 1), GOAL_COLOR, -1)
-            cv2.circle(board, (self.agent_state[0] * 22 + 11, self.agent_state[1] * 22 + 11), 10, AGENT_COLOR, -1)
+            cv2.circle(board, (self.agent_state[0] * 22 + 11, self.agent_state[1] * 22 + 11), 8, AGENT_COLOR, -1)
             cv2.putText(board, f"Steps: {self.num_steps}", (5, 612),
                         cv2.FONT_HERSHEY_PLAIN, 1, self.letter_color, 1, cv2.LINE_AA)
             if self.done:

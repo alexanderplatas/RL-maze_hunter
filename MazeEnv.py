@@ -14,7 +14,7 @@ FPS = 15
 PREY_COLOR = (255, 144, 30)
 HUNTER_COLOR = (30, 144, 255)
 OBSTACLES_COLOR = (100, 100, 100)
-GOAL_COLOR = (0, 100, 0)
+GOAL_COLOR = (0, 150, 0)
 MAP = 'borders'
 
 
@@ -137,9 +137,9 @@ class MazeEnv(gymnasium.Env):
 
             board = self.img.copy()
             cv2.circle(board, (self.prey_state[0] * 22 + 11, self.prey_state[1] * 22 + 11),
-                       10, PREY_COLOR, -1)
+                       8, PREY_COLOR, -1)
             cv2.circle(board, (self.hunter_state[0] * 22 + 11, self.hunter_state[1] * 22 + 11),
-                       10, HUNTER_COLOR, -1)
+                       8, HUNTER_COLOR, -1)
             cv2.putText(board, f"Steps: {self.num_steps}", (5, 612),
                         cv2.FONT_HERSHEY_PLAIN, 1, self.letter_color, 1, cv2.LINE_AA)
 
