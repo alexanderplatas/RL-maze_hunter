@@ -156,9 +156,6 @@ class TrainingEnv(gymnasium.Env):
         # Obstacles
         self.obstacles = map['obstacles']
 
-        # Visualize game
-        self.letter_color = (255, 144, 30)
-
         # Game Over
         self.truncated = False
         self.done = False
@@ -169,10 +166,19 @@ class TrainingEnv(gymnasium.Env):
         # Additional information
         self.info = {}
 
+        if self.render:
+            # Generate board
+            self.letter_color = (255, 144, 30)
+            self.img = np.zeros((620, 594, 3), dtype=np.uint8)
+            self._generate_board()
+
         ############# Return ##############
 
         observation = self._get_observation()
         return observation, self.info
+
+    def set_render(self, b):
+        self.render = b
 
     def _is_dead(self, state):
 

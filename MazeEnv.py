@@ -7,7 +7,7 @@ import numpy as np
 from gym import spaces
 from gymnasium import spaces
 
-MAX_STEPS_LIMIT = 10000
+MAX_STEPS_LIMIT = 100
 COLLISION_REWARD = -10
 WIN_REWARD = 10
 FPS = 15
@@ -15,7 +15,7 @@ PREY_COLOR = (255, 144, 30)
 HUNTER_COLOR = (30, 144, 255)
 OBSTACLES_COLOR = (100, 100, 100)
 GOAL_COLOR = (0, 100, 0)
-MAP = 'original'
+MAP = 'borders'
 
 
 class MazeEnv(gymnasium.Env):
@@ -28,7 +28,7 @@ class MazeEnv(gymnasium.Env):
 
         # Action and observation spaces
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(low=-594, high=594, shape=(6,), dtype=np.float64)
+        self.observation_space = spaces.Box(low=-594, high=594, shape=(12,), dtype=np.float64)
 
         # Load environment distribution
         with open('maps.json', 'r', encoding='utf8') as f:
