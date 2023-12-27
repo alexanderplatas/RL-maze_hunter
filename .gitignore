@@ -1,2 +1,5 @@
 __pycache__
 .idea
+models
+TrainingEnv.py
+main.py
