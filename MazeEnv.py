@@ -149,7 +149,7 @@ class MazeEnv(gymnasium.Env):
                 sleep_time = 1
             else:
                 sleep_time = 1 / FPS
-            cv2.imshow('DUMB MAZE RUNNER', board)
+            cv2.imshow('MAZE HUNTER', board)
             cv2.waitKey(1)
             sleep(sleep_time)
 
