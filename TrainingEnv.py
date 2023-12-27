@@ -38,7 +38,10 @@ class TrainingEnv(gymnasium.Env):
         self.agent_state = map['hunter']
 
         # Final state
-        self.goal = map['goal']
+        # self.goal = map['goal']
+        self.goal = self.agent_state
+        while self.goal == self.agent_state:
+            self.goal = [random.randint(10, 16), random.randint(10, 16)]
 
         # Obstacles
         self.obstacles = map['obstacles']
@@ -80,16 +83,16 @@ class TrainingEnv(gymnasium.Env):
 
         ####### Move goal randomly ########
 
-        possible_actions = self._get_possible_actions(self.goal)
-        selected_action = random.choice(possible_actions)
-        if selected_action == 0:  # UP
-            self.goal[1] -= 1
-        if selected_action == 1:  # DOWN
-            self.goal[1] += 1
-        if selected_action == 2:  # RIGHT
-            self.goal[0] += 1
-        if selected_action == 3:  # LEFT
-            self.goal[0] -= 1
+        # possible_actions = self._get_possible_actions(self.goal)
+        # selected_action = random.choice(possible_actions)
+        # if selected_action == 0:  # UP
+        #     self.goal[1] -= 1
+        # if selected_action == 1:  # DOWN
+        #     self.goal[1] += 1
+        # if selected_action == 2:  # RIGHT
+        #     self.goal[0] += 1
+        # if selected_action == 3:  # LEFT
+        #     self.goal[0] -= 1
 
         ############# if died #############
 
@@ -151,7 +154,10 @@ class TrainingEnv(gymnasium.Env):
         self.agent_state = map['hunter']
 
         # Final state
-        self.goal = map['goal']
+        # self.goal = map['goal']
+        self.goal = self.agent_state
+        while self.goal == self.agent_state:
+            self.goal = [random.randint(10, 16), random.randint(10, 16)]
 
         # Obstacles
         self.obstacles = map['obstacles']
@@ -197,8 +203,8 @@ class TrainingEnv(gymnasium.Env):
         pos_y = self.agent_state[1]
 
         # Direction to the prey
-        final_x = self.agent_state[0] - pos_x > 0
-        final_y = self.agent_state[1] - pos_y > 0
+        final_x = self.goal[0] - pos_x > 0
+        final_y = self.goal[1] - pos_y > 0
 
         # If there are elements around
         up = self._is_dead([pos_x, pos_y - 1])
