@@ -40,7 +40,7 @@ class TrainingEnv(gymnasium.Env):
         # Final state
         # self.goal = map['goal']
 
-        self.goal = random.choice([[1,1],[1,25],[25,1],[25,25],[13, 23]])
+        self.goal = random.choice([[1, 1], [1, 25], [25, 1], [25, 25], [13, 23]])
 
         # self.goal = self.agent_state
         # while self.goal == self.agent_state:
@@ -49,11 +49,10 @@ class TrainingEnv(gymnasium.Env):
 
         #     # Bordes
         #     self.goal = random.choice([[1,1],[1,25],[25,1],[25,25]])
-           
+
         #     # Onewall
         #     # self.goal = [13, 20]
 
-            
         # Obstacles
         self.obstacles = map['obstacles']
 
@@ -93,7 +92,7 @@ class TrainingEnv(gymnasium.Env):
             self.agent_state[0] -= 1
 
         ####### Move goal randomly ########
-        
+
         # if np.sum(np.abs(np.array(self.agent_state) - np.array(self.goal))) > 2:
         # # if random.choice([True,False,False]):
         #     possible_actions = self._get_possible_actions(self.goal)
@@ -134,6 +133,11 @@ class TrainingEnv(gymnasium.Env):
         if self.render:
 
             board = self.img.copy()
+            i = (self.agent_state[0] - 1) * 22
+            j = (self.agent_state[1] - 1) * 22
+            overlay = board.copy()
+            cv2.rectangle(overlay, (i + 1, j + 1), (i + 153, j + 153), (80, 80, 150), -1)
+            board = cv2.addWeighted(overlay, 0.5, board, 1 - 0.5, 0)
             cv2.rectangle(board, (self.goal[0] * 22 + 1, self.goal[1] * 22 + 1),
                           (self.goal[0] * 22 + 22 - 1, self.goal[1] * 22 + 22 - 1), GOAL_COLOR, -1)
             cv2.circle(board, (self.agent_state[0] * 22 + 11, self.agent_state[1] * 22 + 11), 8, AGENT_COLOR, -1)
@@ -169,7 +173,7 @@ class TrainingEnv(gymnasium.Env):
         # Final state
         # self.goal = map['goal']
 
-        self.goal = random.choice([[1,1],[1,25],[25,1],[25,25],[13, 23]])
+        self.goal = random.choice([[1, 1], [1, 25], [25, 1], [25, 25], [13, 23]])
 
         # self.goal = self.agent_state
         # while self.goal == self.agent_state:
@@ -231,7 +235,7 @@ class TrainingEnv(gymnasium.Env):
         final_y = self.goal[1] - pos_y > 0
 
         # If there are elements around
-        up  = self._is_dead([pos_x, pos_y - 1])
+        up = self._is_dead([pos_x, pos_y - 1])
         down = self._is_dead([pos_x, pos_y + 1])
         right = self._is_dead([pos_x + 1, pos_y])
         left = self._is_dead([pos_x - 1, pos_y])
@@ -240,7 +244,6 @@ class TrainingEnv(gymnasium.Env):
         up_left = self._is_dead([pos_x - 1, pos_y - 1])
         down_right = self._is_dead([pos_x + 1, pos_y + 1])
         down_left = self._is_dead([pos_x - 1, pos_y + 1])
-
 
         # returns the observation of current state
         return np.array([final_x, final_y, up, down, right, left, up_right, up_left, down_right, down_left])
