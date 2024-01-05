@@ -7,7 +7,7 @@ import numpy as np
 from gym import spaces
 from gymnasium import spaces
 
-MAX_STEPS_LIMIT = 100
+MAX_STEPS_LIMIT = 500
 COLLISION_REWARD = -10
 WIN_REWARD = 10
 FPS = 15

@@ -1,3 +1,3 @@
-# MAZE RUNNER
+# MAZE HUNTER
 
-![alt text](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/game.png?raw=true)
+![alt text](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/original.png?raw=true)
