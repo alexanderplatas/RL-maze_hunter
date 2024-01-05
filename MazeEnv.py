@@ -15,7 +15,7 @@ PREY_COLOR = (255, 144, 30)
 HUNTER_COLOR = (30, 144, 255)
 OBSTACLES_COLOR = (100, 100, 100)
 GOAL_COLOR = (0, 150, 0)
-MAP = 'borders'
+MAP = 'original'
 
 
 class MazeEnv(gymnasium.Env):
@@ -227,6 +227,11 @@ class MazeEnv(gymnasium.Env):
         prey_right = self._is_dead([prey_pos_x + 1, prey_pos_y]) or [prey_pos_x + 1, prey_pos_y] == self.hunter_state
         prey_left = self._is_dead([prey_pos_x - 1, prey_pos_y]) or [prey_pos_x - 1, prey_pos_y] == self.hunter_state
 
+        prey_hunter_up_right = self._is_dead([prey_pos_x + 1, prey_pos_y - 1]) or [prey_pos_x + 1, prey_pos_y - 1] == self.hunter_state
+        prey_hunter_up_left = self._is_dead([prey_pos_x - 1, prey_pos_y - 1]) or [prey_pos_x - 1, prey_pos_y - 1] == self.hunter_state
+        prey_hunter_down_right = self._is_dead([prey_pos_x + 1, prey_pos_y + 1]) or [prey_pos_x + 1, prey_pos_y + 1] == self.hunter_state
+        prey_hunter_down_left = self._is_dead([prey_pos_x - 1, prey_pos_y + 1]) or [prey_pos_x - 1, prey_pos_y + 1] == self.hunter_state
+
         ####### Hunter observation ########
 
         hunter_pos_x = self.prey_state[0]
@@ -241,11 +246,16 @@ class MazeEnv(gymnasium.Env):
         hunter_down = self._is_dead([hunter_pos_x, hunter_pos_y + 1])
         hunter_right = self._is_dead([hunter_pos_x + 1, hunter_pos_y])
         hunter_left = self._is_dead([hunter_pos_x - 1, hunter_pos_y])
+        
+        hunter_up_right = self._is_dead([hunter_pos_x + 1, hunter_pos_y - 1])
+        hunter_up_left = self._is_dead([hunter_pos_x - 1, hunter_pos_y - 1])
+        hunter_down_right = self._is_dead([hunter_pos_x + 1, hunter_pos_y + 1])
+        hunter_down_left = self._is_dead([hunter_pos_x - 1, hunter_pos_y + 1])
 
         # returns the observation of current state
         return np.array([
-            prey_final_x, prey_final_y, prey_up, prey_down, prey_right, prey_left,
-            hunter_final_x, hunter_final_y, hunter_up, hunter_down, hunter_right, hunter_left
+            prey_final_x, prey_final_y, prey_up, prey_down, prey_right, prey_left, prey_hunter_up_right, prey_hunter_up_left, prey_hunter_down_right, prey_hunter_down_left,
+            hunter_final_x, hunter_final_y, hunter_up, hunter_down, hunter_right, hunter_left, hunter_up_right, hunter_up_left, hunter_down_right, hunter_down_left
         ])
 
     def _generate_board(self):

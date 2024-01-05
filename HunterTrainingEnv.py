@@ -15,7 +15,7 @@ FPS = 15
 OBSTACLES_COLOR = (100, 100, 100)
 GOAL_COLOR = (0, 150, 0)
 AGENT_COLOR = (0, 150, 150)
-MAP = 'miniborders'
+MAP = 'original'
 
 
 class TrainingEnv(gymnasium.Env):
@@ -28,7 +28,7 @@ class TrainingEnv(gymnasium.Env):
 
         # Action and observation spaces
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(low=-594, high=594, shape=(6,), dtype=np.float64)
+        self.observation_space = spaces.Box(low=-594, high=594, shape=(10,), dtype=np.float64)
 
         # Load environment distribution
         with open('maps.json', 'r', encoding='utf8') as f:
@@ -39,10 +39,21 @@ class TrainingEnv(gymnasium.Env):
 
         # Final state
         # self.goal = map['goal']
-        self.goal = self.agent_state
-        while self.goal == self.agent_state:
-            self.goal = [random.randint(10, 16), random.randint(10, 16)]
 
+        self.goal = random.choice([[1,1],[1,25],[25,1],[25,25],[13, 23]])
+
+        # self.goal = self.agent_state
+        # while self.goal == self.agent_state:
+        #     # Miniborders
+        #     # self.goal = random.choice([[16,16],[16,19],[19,16],[19,19]])
+
+        #     # Bordes
+        #     self.goal = random.choice([[1,1],[1,25],[25,1],[25,25]])
+           
+        #     # Onewall
+        #     # self.goal = [13, 20]
+
+            
         # Obstacles
         self.obstacles = map['obstacles']
 
@@ -82,17 +93,19 @@ class TrainingEnv(gymnasium.Env):
             self.agent_state[0] -= 1
 
         ####### Move goal randomly ########
-
-        # possible_actions = self._get_possible_actions(self.goal)
-        # selected_action = random.choice(possible_actions)
-        # if selected_action == 0:  # UP
-        #     self.goal[1] -= 1
-        # if selected_action == 1:  # DOWN
-        #     self.goal[1] += 1
-        # if selected_action == 2:  # RIGHT
-        #     self.goal[0] += 1
-        # if selected_action == 3:  # LEFT
-        #     self.goal[0] -= 1
+        
+        # if np.sum(np.abs(np.array(self.agent_state) - np.array(self.goal))) > 2:
+        # # if random.choice([True,False,False]):
+        #     possible_actions = self._get_possible_actions(self.goal)
+        #     selected_action = random.choice(possible_actions)
+        #     if selected_action == 0:  # UP
+        #         self.goal[1] -= 1
+        #     if selected_action == 1:  # DOWN
+        #         self.goal[1] += 1
+        #     if selected_action == 2:  # RIGHT
+        #         self.goal[0] += 1
+        #     if selected_action == 3:  # LEFT
+        #         self.goal[0] -= 1
 
         ############# if died #############
 
@@ -155,9 +168,20 @@ class TrainingEnv(gymnasium.Env):
 
         # Final state
         # self.goal = map['goal']
-        self.goal = self.agent_state
-        while self.goal == self.agent_state:
-            self.goal = [random.randint(10, 16), random.randint(10, 16)]
+
+        self.goal = random.choice([[1,1],[1,25],[25,1],[25,25],[13, 23]])
+
+        # self.goal = self.agent_state
+        # while self.goal == self.agent_state:
+        #     # Miniborders
+        #     # self.goal = random.choice([[16,16],[16,19],[19,16],[19,19]])
+
+        #     # Bordes
+        #     self.goal = random.choice([[1,1],[1,25],[25,1],[25,25]])
+
+        #     # Onewall
+        #     # self.goal = random.choice([[25,1],[25,25],[13, 20]])
+        #     # self.goal = [13, 20]
 
         # Obstacles
         self.obstacles = map['obstacles']
@@ -207,13 +231,20 @@ class TrainingEnv(gymnasium.Env):
         final_y = self.goal[1] - pos_y > 0
 
         # If there are elements around
-        up = self._is_dead([pos_x, pos_y - 1])
+        up  = self._is_dead([pos_x, pos_y - 1])
         down = self._is_dead([pos_x, pos_y + 1])
         right = self._is_dead([pos_x + 1, pos_y])
         left = self._is_dead([pos_x - 1, pos_y])
 
+        up_right = self._is_dead([pos_x + 1, pos_y - 1])
+        up_left = self._is_dead([pos_x - 1, pos_y - 1])
+        down_right = self._is_dead([pos_x + 1, pos_y + 1])
+        down_left = self._is_dead([pos_x - 1, pos_y + 1])
+
+
         # returns the observation of current state
-        return np.array([final_x, final_y, up, down, right, left])
+        return np.array([final_x, final_y, up, down, right, left, up_right, up_left, down_right, down_left])
+        # return np.array([final_x, final_y, up, down, right, left])
 
     def _get_possible_actions(self, state):
 
