@@ -8,7 +8,7 @@ import numpy as np
 from gym import spaces
 from gymnasium import spaces
 
-MAX_STEPS_LIMIT = 10000
+MAX_STEPS_LIMIT = 300
 COLLISION_REWARD = -10
 WIN_REWARD = 10
 FPS = 15
@@ -18,43 +18,56 @@ AGENT_COLOR = (0, 150, 150)
 MAP = 'original'
 
 
-class TrainingEnv(gymnasium.Env):
+class HunterTrainingEnv(gymnasium.Env):
 
     def __init__(self, render=False):
 
         """ Inicialización del entorno """
 
-        super(TrainingEnv, self).__init__()
+        super(HunterTrainingEnv, self).__init__()
 
         # Action and observation spaces
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(low=-594, high=594, shape=(10,), dtype=np.float64)
+        self.observation_space = spaces.Box(low=-594, high=594, shape=(11,), dtype=np.float64)
 
         # Load environment distribution
         with open('maps.json', 'r', encoding='utf8') as f:
             map = json.load(f)[MAP]
 
         # Initial state
-        self.agent_state = map['hunter']
-
+        # self.agent_state = map['hunter']
+        self.agent_state = [random.randint(1,25),random.randint(1,25)]
+        
         # Final state
         # self.goal = map['goal']
 
-        self.goal = random.choice([[1, 1], [1, 25], [25, 1], [25, 25], [13, 23]])
-
         # self.goal = self.agent_state
         # while self.goal == self.agent_state:
-        #     # Miniborders
-        #     # self.goal = random.choice([[16,16],[16,19],[19,16],[19,19]])
-
-        #     # Bordes
-        #     self.goal = random.choice([[1,1],[1,25],[25,1],[25,25]])
-
-        #     # Onewall
-        #     # self.goal = [13, 20]
 
         # Obstacles
         self.obstacles = map['obstacles']
+
+        ########### Set up goal ############
+
+        # Miniborders
+        # self.goal = random.choice([[9,9],[9,17],[17,9],[17,17]])
+
+        # Bordes
+        # self.goal = random.choice([[1,1],[1,25],[25,1],[25,25]])
+        # self.goal = random.choice([[1,random.randint(1,25)],[random.randint(1,25),1],[25,random.randint(1,25)],[random.randint(1,25),25]])
+
+        # Random 
+        self.goal = [random.randint(1,25),random.randint(1,25)]
+        while self.goal not in self.obstacles and np.sum(np.abs(np.array(self.agent_state) - np.array(self.goal))) < 10:
+            self.goal = [random.randint(1,25),random.randint(1,25)]
+
+        # Onewall
+        # self.goal = [13, 20]
+
+        # Original        
+        # self.goal = random.choice([[1, 1], [1, 25], [25, 1], [25, 25], [13, 23]])
+
+        ####################################
 
         # Visualize game
         self.render = render
@@ -64,7 +77,8 @@ class TrainingEnv(gymnasium.Env):
         self.truncated = False
         self.done = False
 
-        # Reward and number of steps
+        # Reward and number of steps and manhattan dist to goal
+        self.init_manhattan = np.sum(np.abs(np.array(self.agent_state) - np.array(self.goal)))
         self.reward, self.num_steps = 0, 0
 
         # Additional information
@@ -93,18 +107,28 @@ class TrainingEnv(gymnasium.Env):
 
         ####### Move goal randomly ########
 
-        # if np.sum(np.abs(np.array(self.agent_state) - np.array(self.goal))) > 2:
-        # # if random.choice([True,False,False]):
-        #     possible_actions = self._get_possible_actions(self.goal)
-        #     selected_action = random.choice(possible_actions)
-        #     if selected_action == 0:  # UP
-        #         self.goal[1] -= 1
-        #     if selected_action == 1:  # DOWN
-        #         self.goal[1] += 1
-        #     if selected_action == 2:  # RIGHT
-        #         self.goal[0] += 1
-        #     if selected_action == 3:  # LEFT
-        #         self.goal[0] -= 1
+        if np.sum(np.abs(np.array(self.agent_state) - np.array(self.goal))) > 2:
+            possible_actions = self._get_possible_actions(self.goal)
+            if len(possible_actions) > 0:
+                selected_action = random.choice(possible_actions)
+                if selected_action == 0:  # UP
+                    self.goal[1] -= 1
+                if selected_action == 1:  # DOWN
+                    self.goal[1] += 1
+                if selected_action == 2:  # RIGHT
+                    self.goal[0] += 1
+                if selected_action == 3:  # LEFT
+                    self.goal[0] -= 1
+
+
+        ############# Rewards #############
+        
+        manhattan_dist_to_goal = np.sum(np.abs(np.array(self.agent_state) - np.array(self.goal)))
+        if self.num_steps < manhattan_dist_to_goal:
+            self.reward = 1 / (manhattan_dist_to_goal + 0.00001)
+        else:
+            self.reward = -0.001
+            
 
         ############# if died #############
 
@@ -121,12 +145,6 @@ class TrainingEnv(gymnasium.Env):
             self.done = True
             self.reward = 10
             self.letter_color = (0, 120, 0)
-
-        ############# Rewards #############
-
-        else:
-            manhattan_dist_to_goal = np.sum(np.abs(np.array(self.agent_state) - np.array(self.goal)))
-            self.reward = 0
 
         ########## Visualization ##########
 
@@ -168,24 +186,33 @@ class TrainingEnv(gymnasium.Env):
             map = json.load(f)[MAP]
 
         # Initial state
-        self.agent_state = map['hunter']
+        # self.agent_state = map['hunter']
+        self.agent_state = [random.randint(1,25),random.randint(1,25)]
 
         # Final state
         # self.goal = map['goal']
 
-        self.goal = random.choice([[1, 1], [1, 25], [25, 1], [25, 25], [13, 23]])
+        ########### Set up goal ############
 
-        # self.goal = self.agent_state
-        # while self.goal == self.agent_state:
-        #     # Miniborders
-        #     # self.goal = random.choice([[16,16],[16,19],[19,16],[19,19]])
+        # Miniborders
+        # self.goal = random.choice([[9,9],[9,17],[17,9],[17,17]])
 
-        #     # Bordes
-        #     self.goal = random.choice([[1,1],[1,25],[25,1],[25,25]])
+        # Bordes
+        # self.goal = random.choice([[1,1],[1,25],[25,1],[25,25]])
+        # self.goal = random.choice([[1,random.randint(1,25)],[random.randint(1,25),1],[25,random.randint(1,25)],[random.randint(1,25),25]])
 
-        #     # Onewall
-        #     # self.goal = random.choice([[25,1],[25,25],[13, 20]])
-        #     # self.goal = [13, 20]
+        # Random 
+        self.goal = [random.randint(1,25),random.randint(1,25)]
+        while self.goal not in map['obstacles'] and np.sum(np.abs(np.array(self.agent_state) - np.array(self.goal))) < 10:
+            self.goal = [random.randint(1,25),random.randint(1,25)]
+
+        # Onewall
+        # self.goal = [13, 20]
+
+        # Original        
+        # self.goal = random.choice([[1, 1], [1, 25], [25, 1], [25, 25], [13, 23]])
+
+        ####################################
 
         # Obstacles
         self.obstacles = map['obstacles']
@@ -194,8 +221,10 @@ class TrainingEnv(gymnasium.Env):
         self.truncated = False
         self.done = False
 
-        # Reward and number of steps
+        # Reward and number of steps and manhattan dist to goal
+        self.init_manhattan = np.sum(np.abs(np.array(self.agent_state) - np.array(self.goal)))
         self.reward, self.num_steps = 0, 0
+
 
         # Additional information
         self.info = {}
@@ -225,6 +254,13 @@ class TrainingEnv(gymnasium.Env):
 
         """ Genera la observación del estado actual """
 
+        # 12 observaciones, 9 casillas mas cercanas, dirección de la presa, y si la casilla actual ha sido visitada
+        # hunter -> -2
+        # obstacle -> -1
+        # nothing -> 0
+        # goal -> 1
+        # prey -> 2
+
         ######## Agent observation ########
 
         pos_x = self.agent_state[0]
@@ -234,20 +270,24 @@ class TrainingEnv(gymnasium.Env):
         final_x = self.goal[0] - pos_x > 0
         final_y = self.goal[1] - pos_y > 0
 
-        # If there are elements around
-        up = self._is_dead([pos_x, pos_y - 1])
-        down = self._is_dead([pos_x, pos_y + 1])
-        right = self._is_dead([pos_x + 1, pos_y])
-        left = self._is_dead([pos_x - 1, pos_y])
+        alrededor = [] 
+        for new_x in range (pos_x - 1,pos_x + 2):
+            for new_y in range(pos_y-1, pos_y + 2):
 
-        up_right = self._is_dead([pos_x + 1, pos_y - 1])
-        up_left = self._is_dead([pos_x - 1, pos_y - 1])
-        down_right = self._is_dead([pos_x + 1, pos_y + 1])
-        down_left = self._is_dead([pos_x - 1, pos_y + 1])
+                if [new_x,new_y] in self.obstacles:
+                    alrededor.append(-1)
+                elif [new_x,new_y] == self.agent_state:
+                    alrededor.append(-2)
+                elif [new_x,new_y] == self.goal:
+                    alrededor.append(2)
+                # elif [new_x,new_y] == self.goal:
+                #     alrededor.append(2)
+                else:
+                    alrededor.append(0)
+
 
         # returns the observation of current state
-        return np.array([final_x, final_y, up, down, right, left, up_right, up_left, down_right, down_left])
-        # return np.array([final_x, final_y, up, down, right, left])
+        return np.array([final_x, final_y] + alrededor )
 
     def _get_possible_actions(self, state):
 

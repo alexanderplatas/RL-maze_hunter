@@ -2,3 +2,4 @@ __pycache__
 .idea
 TrainingEnv.py
 main.py
+models
