@@ -8,14 +8,14 @@ from gym import spaces
 from gymnasium import spaces
 
 MAX_STEPS_LIMIT = 500
-COLLISION_REWARD = -10
+LOSE_REWARD = -10
 WIN_REWARD = 10
-FPS = 15
+FPS = 10
 PREY_COLOR = (255, 144, 30)
 HUNTER_COLOR = (30, 144, 255)
 OBSTACLES_COLOR = (100, 100, 100)
 GOAL_COLOR = (0, 150, 0)
-MAP = 'original'
+MAP = 'miniborders'
 
 
 class MazeEnv(gymnasium.Env):
@@ -28,15 +28,15 @@ class MazeEnv(gymnasium.Env):
 
         # Action and observation spaces
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(low=-594, high=594, shape=(12,), dtype=np.float64)
+        self.observation_space = spaces.Box(low=-594, high=594, shape=(60,), dtype=np.float64)
 
         # Load environment distribution
         with open('maps.json', 'r', encoding='utf8') as f:
             map = json.load(f)[MAP]
 
         # Initial state
-        self.prey_state = map['prey']
-        self.hunter_state = map['hunter']
+        self.prey = map['prey']
+        self.hunter = map['hunter']
 
         # Final state
         self.goal = map['goal']
@@ -46,7 +46,7 @@ class MazeEnv(gymnasium.Env):
 
         # Visualize game
         self.render = render
-        self.letter_color = (255, 144, 30)
+        self.letter_color = (0, 120, 0)
 
         # Game Over
         self.truncated = False
@@ -74,88 +74,91 @@ class MazeEnv(gymnasium.Env):
 
         ########## Move hunter ############
         if action[1] == 0:  # UP
-            self.hunter_state[1] -= 1
+            self.hunter[1] -= 1
         if action[1] == 1:  # DOWN
-            self.hunter_state[1] += 1
+            self.hunter[1] += 1
         if action[1] == 2:  # RIGHT
-            self.hunter_state[0] += 1
+            self.hunter[0] += 1
         if action[1] == 3:  # LEFT
-            self.hunter_state[0] -= 1
+            self.hunter[0] -= 1
 
-        ########### Move prey #############
-        if action[0] == 0:  # UP
-            self.prey_state[1] -= 1
-        if action[0] == 1:  # DOWN
-            self.prey_state[1] += 1
-        if action[0] == 2:  # RIGHT
-            self.prey_state[0] += 1
-        if action[0] == 3:  # LEFT
-            self.prey_state[0] -= 1
+        ####### if hunter eats prey #######
 
-        self.num_steps += 1
-
-        ######### if hunter dies ##########
-
-        if self._is_dead(self.hunter_state) or self.num_steps >= MAX_STEPS_LIMIT:
-
-            self.info['loser'] = 'Hunter'
-            self.letter_color = (0, 0, 255)
-            self.truncated = True
-            self.done = True
-
-        ########## if prey dies ###########
-
-        elif self._is_dead(self.prey_state):
-
-            self.info['loser'] = 'Prey'
-            self.letter_color = (0, 0, 255)
-            self.truncated = True
-            self.done = True
-
-        ######### if hunter wins ##########
-
-        elif self.hunter_state == self.prey_state:
+        if self.hunter == self.prey:
             self.done = True
             self.info['winner'] = 'Hunter'
             self.letter_color = HUNTER_COLOR
 
-        ########## if prey wins ###########
-
-        elif self.goal == self.prey_state:
-            self.done = True
-            self.info['winner'] = 'Prey'
-            self.letter_color = PREY_COLOR
-
-        ############# Rewards #############
-
         else:
-            self.reward = 0
+
+            ########### Move prey #############
+            if action[0] == 0:  # UP
+                self.prey[1] -= 1
+            if action[0] == 1:  # DOWN
+                self.prey[1] += 1
+            if action[0] == 2:  # RIGHT
+                self.prey[0] += 1
+            if action[0] == 3:  # LEFT
+                self.prey[0] -= 1
+
+            self.num_steps += 1
+
+            ######### if hunter dies ##########
+
+            if self._is_dead(self.hunter):
+
+                self.info['loser'] = 'Hunter'
+                self.letter_color = (0, 0, 200)
+                self.truncated = True
+                self.done = True
+
+            ########## if prey dies ###########
+
+            elif self._is_dead(self.prey):
+
+                self.info['loser'] = 'Prey'
+                self.letter_color = (0, 0, 200)
+                self.truncated = True
+                self.done = True
+
+            ######### if hunter wins ##########
+
+            elif self.hunter == self.prey:
+                self.done = True
+                self.info['winner'] = 'Hunter'
+                self.letter_color = HUNTER_COLOR
+
+            ########## if prey wins ###########
+
+            elif self.goal == self.prey:
+                self.done = True
+                self.info['winner'] = 'Prey'
+                self.letter_color = PREY_COLOR
+
+            ############# Rewards #############
+
+            else:
+                self.reward = 0
 
         ########## Visualization ##########
 
         if self.render:
 
-            board = self.img.copy()
-            cv2.circle(board, (self.prey_state[0] * 22 + 11, self.prey_state[1] * 22 + 11),
-                       8, PREY_COLOR, -1)
-            cv2.circle(board, (self.hunter_state[0] * 22 + 11, self.hunter_state[1] * 22 + 11),
-                       8, HUNTER_COLOR, -1)
-            cv2.putText(board, f"Steps: {self.num_steps}", (5, 612),
-                        cv2.FONT_HERSHEY_PLAIN, 1, self.letter_color, 1, cv2.LINE_AA)
+            board = self._draw_step(self.img.copy())
 
             if self.done:
-                cv2.putText(board, f'{self.info["winner"]} wins', (480, 612), cv2.FONT_HERSHEY_PLAIN,
-                            1, self.letter_color, 2, cv2.LINE_AA)
+                cv2.putText(board, 'GAME OVER', (480, 612), cv2.FONT_HERSHEY_PLAIN,
+                            1, self.letter_color, 1, cv2.LINE_AA)
                 sleep_time = 1
             else:
                 sleep_time = 1 / FPS
-            cv2.imshow('MAZE HUNTER', board)
+            cv2.imshow('Maze Hunter', board)
             cv2.waitKey(1)
             sleep(sleep_time)
 
         ############# Return ##############
 
-        observation = self._get_obs()
+        observation = self._get_observation()
 
         return observation, self.reward, self.done, self.truncated, self.info
 
@@ -168,8 +171,8 @@ class MazeEnv(gymnasium.Env):
             map = json.load(f)[MAP]
 
         # Initial state
-        self.prey_state = map['prey']
-        self.hunter_state = map['hunter']
+        self.prey = map['prey']
+        self.hunter = map['hunter']
 
         # Final state
         self.goal = map['goal']
@@ -192,76 +195,82 @@ class MazeEnv(gymnasium.Env):
 
         if self.render:
             # Generate board
-            self.letter_color = (255, 144, 30)
+            self.letter_color = (0, 120, 0)
             self.img = np.zeros((620, 594, 3), dtype=np.uint8)
             self._generate_board()
 
         ############# Return ##############
 
-        observation = self._get_obs()
+        observation = self._get_observation()
         return observation, self.info
 
     def _is_dead(self, state):
-
-        """ Dado un estado devuelve True si este es un estado terminal (muerte) """
-
+        """
+        Check if given state is terminal
+        :param state: current state (2 item list)
+        :return: True if terminal, False otherwise
+        """
         # returns true if current state is a terminal state
         return state in self.obstacles or -1 in state or 27 in state
 
-    def _get_obs(self):
-
-        """ Genera la observación del estado actual """
-
+    def _get_observation(self):
+        """
+        Generate current prey and hunter observation
+        :return: list of prey and hunter obsrtvation
+            Prey      --> 2
+            Goal      --> 1
+            Nothing   --> 0
+            Obstacle  --> -1
+            Hunter    --> -2
+        """
         ######## Prey observation #########
 
-        prey_pos_x = self.prey_state[0]
-        prey_pos_y = self.prey_state[1]
+        prey_observation = list()
+        for i in range(self.prey[0] - 3, self.prey[0] + 3 + 1):
+            for j in range(self.prey[1] - 3, self.prey[1] + 3 + 1):
 
-        # Direction to the goal
-        prey_final_x = self.goal[0] - prey_pos_x > 0
-        prey_final_y = self.goal[1] - prey_pos_y > 0
+                if [i, j] == self.prey:
+                    prey_observation.append(2)
+                # elif [i, j] == self.hunter:
+                #     prey_observation.append(-2)
+                elif [i, j] == self.goal:
+                    prey_observation.append(1)
+                elif [i, j] in self.obstacles:
+                    prey_observation.append(-1)
+                else:
+                    prey_observation.append(0)
 
-        # If there are elements around
-        prey_up = self._is_dead([prey_pos_x, prey_pos_y - 1]) or [prey_pos_x, prey_pos_y - 1] == self.hunter_state
-        prey_down = self._is_dead([prey_pos_x, prey_pos_y + 1]) or [prey_pos_x, prey_pos_y + 1] == self.hunter_state
-        prey_right = self._is_dead([prey_pos_x + 1, prey_pos_y]) or [prey_pos_x + 1, prey_pos_y] == self.hunter_state
-        prey_left = self._is_dead([prey_pos_x - 1, prey_pos_y]) or [prey_pos_x - 1, prey_pos_y] == self.hunter_state
-
-        prey_hunter_up_right = self._is_dead([prey_pos_x + 1, prey_pos_y - 1]) or [prey_pos_x + 1, prey_pos_y - 1] == self.hunter_state
-        prey_hunter_up_left = self._is_dead([prey_pos_x - 1, prey_pos_y - 1]) or [prey_pos_x - 1, prey_pos_y - 1] == self.hunter_state
-        prey_hunter_down_right = self._is_dead([prey_pos_x + 1, prey_pos_y + 1]) or [prey_pos_x + 1, prey_pos_y + 1] == self.hunter_state
-        prey_hunter_down_left = self._is_dead([prey_pos_x - 1, prey_pos_y + 1]) or [prey_pos_x - 1, prey_pos_y + 1] == self.hunter_state
 
         ####### Hunter observation ########
 
-        hunter_pos_x = self.prey_state[0]
-        hunter_pos_y = self.prey_state[1]
+        pos_x = self.hunter[0]
+        pos_y = self.hunter[1]
 
         # Direction to the prey
-        hunter_final_x = self.prey_state[0] - hunter_pos_x > 0
-        hunter_final_y = self.prey_state[1] - hunter_pos_y > 0
+        final_x = self.prey[0] - pos_x > 0
+        final_y = self.prey[1] - pos_y > 0
 
-        # If there are elements around
-        hunter_up = self._is_dead([hunter_pos_x, hunter_pos_y - 1])
-        hunter_down = self._is_dead([hunter_pos_x, hunter_pos_y + 1])
-        hunter_right = self._is_dead([hunter_pos_x + 1, hunter_pos_y])
-        hunter_left = self._is_dead([hunter_pos_x - 1, hunter_pos_y])
-        
-        hunter_up_right = self._is_dead([hunter_pos_x + 1, hunter_pos_y - 1])
-        hunter_up_left = self._is_dead([hunter_pos_x - 1, hunter_pos_y - 1])
-        hunter_down_right = self._is_dead([hunter_pos_x + 1, hunter_pos_y + 1])
-        hunter_down_left = self._is_dead([hunter_pos_x - 1, hunter_pos_y + 1])
+        alrededor = []
+        for new_x in range(pos_x - 1, pos_x + 2):
+            for new_y in range(pos_y - 1, pos_y + 2):
+
+                if [new_x, new_y] in self.obstacles:
+                    alrededor.append(-1)
+                elif [new_x, new_y] == self.hunter:
+                    alrededor.append(-2)
+                elif [new_x, new_y] == self.prey:
+                    alrededor.append(2)
+                else:
+                    alrededor.append(0)
+        hunter_observation = [final_x, final_y] + alrededor
 
         # returns the observation of current state
-        return np.array([
-            prey_final_x, prey_final_y, prey_up, prey_down, prey_right, prey_left, prey_hunter_up_right, prey_hunter_up_left, prey_hunter_down_right, prey_hunter_down_left,
-            hunter_final_x, hunter_final_y, hunter_up, hunter_down, hunter_right, hunter_left, hunter_up_right, hunter_up_left, hunter_down_right, hunter_down_left
-        ])
+        return np.array(prey_observation + hunter_observation)
 
     def _generate_board(self):
-
-        """ Genera el tablero para la visualización colocando obstáculos y destino """
-
+        """
+        Draw fixed elements on board (obstacles and goal)
+        """
         # Draw obstacles (red)
         for obstacle in self.obstacles:
             cv2.rectangle(self.img, (obstacle[0] * 22 + 1, obstacle[1] * 22 + 1),
@@ -270,6 +279,42 @@ class MazeEnv(gymnasium.Env):
         # Draw goal (green)
         cv2.rectangle(self.img, (self.goal[0] * 22 + 1, self.goal[1] * 22 + 1),
                       (self.goal[0] * 22 + 22 - 1, self.goal[1] * 22 + 22 - 1), GOAL_COLOR, -1)
+
+    def _draw_step(self, board):
+        """
+        Draw moving elements on board (agents, view, steps and reward)
+        :param board: Board with fixed elements (frame)
+        :return: Board with all elements drawn (frame)
+        """
+        overlay = board.copy()
+
+        # Draw prey vision
+        i = (self.prey[0] - 3) * 22
+        j = (self.prey[1] - 3) * 22
+        cv2.rectangle(overlay, (i + 1, j + 1), (i + 153, j + 153), (150, 80, 80), -1)
+        board = cv2.addWeighted(overlay, 0.3, board, 1 - 0.3, 0)
+
+        # Draw hunter vision
+        i = (self.hunter[0] - 1) * 22
+        j = (self.hunter[1] - 1) * 22
+        cv2.rectangle(overlay, (i + 1, j + 1), (i + 65, j + 65), (80, 80, 150), -1)
+        board = cv2.addWeighted(overlay, 0.3, board, 1 - 0.3, 0)
+
+        # Draw prey
+        cv2.circle(board, (self.prey[0] * 22 + 11, self.prey[1] * 22 + 11), 8, PREY_COLOR, -1)
+
+        # Draw hunter
+        cv2.circle(board, (self.hunter[0] * 22 + 11, self.hunter[1] * 22 + 11), 8, HUNTER_COLOR, -1)
+
+        # Draw steps
+        cv2.putText(board, f"Steps: {self.num_steps}", (5, 612),
+                    cv2.FONT_HERSHEY_PLAIN, 1, self.letter_color, 1, cv2.LINE_AA)
+
+        # Draw current reward
+        cv2.putText(board, f"Reward: {round(self.reward, 4)}", (120, 612),
+                    cv2.FONT_HERSHEY_PLAIN, 1, self.letter_color, 1, cv2.LINE_AA)
+
+        return board
 
     def close(self):
         pass
