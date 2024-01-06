@@ -136,7 +136,7 @@ class TrainingEnv(gymnasium.Env):
             i = (self.agent_state[0] - 1) * 22
             j = (self.agent_state[1] - 1) * 22
             overlay = board.copy()
-            cv2.rectangle(overlay, (i + 1, j + 1), (i + 153, j + 153), (80, 80, 150), -1)
+            cv2.rectangle(overlay, (i + 1, j + 1), (i + 65, j + 65), (80, 80, 150), -1)
             board = cv2.addWeighted(overlay, 0.5, board, 1 - 0.5, 0)
             cv2.rectangle(board, (self.goal[0] * 22 + 1, self.goal[1] * 22 + 1),
                           (self.goal[0] * 22 + 22 - 1, self.goal[1] * 22 + 22 - 1), GOAL_COLOR, -1)
