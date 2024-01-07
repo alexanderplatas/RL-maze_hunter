@@ -19,7 +19,6 @@ def evaluate_policy(model, env, n_eval_episodes: int = 100):
 
         while not done:
             action, _states = model.predict(obs)
-            if episode_steps == 0 and action == 0: continue
             obs, reward, done, truncated, info = env.step(action)
             episode_reward += reward
             episode_steps += 1

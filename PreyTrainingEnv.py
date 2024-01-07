@@ -9,16 +9,16 @@ import numpy as np
 from gym import spaces
 from gymnasium import spaces
 
-MAX_STEPS_LIMIT = 1000
-COLLISION_REWARD = -1
-BE_EATEN_REWARD = -10
-WIN_REWARD = 10
-FPS = 30
+MAX_STEPS_LIMIT = 750
+COLLISION_REWARD = -10
+BE_EATEN_REWARD = -20
+WIN_REWARD = 20
+FPS = 15
 OBSTACLES_COLOR = (100, 100, 100)
 GOAL_COLOR = (0, 150, 0)
 PREY_COLOR = (255, 144, 30)
 HUNTER_COLOR = (30, 144, 255)
-MAP = 'minirandom'
+# MAP = 'original'
 
 
 class TrainingEnv(gymnasium.Env):
@@ -31,7 +31,9 @@ class TrainingEnv(gymnasium.Env):
 
         # Action and observation spaces
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(low=-594, high=594, shape=(7, 7), dtype=np.float64)
+        self.observation_space = spaces.Box(low=-594, high=594, shape=(5, 5), dtype=np.float64)
+
+        MAP = random.choice(['20random', '50random', 'borders', '2x2', 'miniborders', 'minirandom'])
 
         # Load environment distribution
         with open('maps.json', 'r', encoding='utf8') as f:
@@ -57,20 +59,20 @@ class TrainingEnv(gymnasium.Env):
 
         # Final state
         self.goal = self.prey
-        while self.goal in self.obstacles or manh_dist_prey_goal < 2:
+        while self.goal in self.obstacles or manh_dist_prey_goal < 2 or self.goal == self.hunter:
             self.goal = [random.randint(1, 25), random.randint(1, 25)]
             manh_dist_prey_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
 
         # Visualize game
         self.render = render
-        self.letter_color = (255, 144, 30)
+        self.letter_color = (50, 205, 154)
 
         # Game Over
         self.truncated = False
         self.done = False
 
         # State log
-        self.state_log = list()
+        self.state_log = [[-1, -1], self.prey.copy()]
 
         # Reward and number of steps
         self.reward, self.num_steps = 0, 0
@@ -93,94 +95,96 @@ class TrainingEnv(gymnasium.Env):
 
         self.num_steps += 1
 
-        # ###### Move hunter randomly #######
-        #
-        # possible_actions = self._get_possible_actions(self.hunter)
-        # selected_action = random.choice(possible_actions)
-        # if selected_action == 0:  # UP
-        #     self.hunter[1] -= 1
-        # if selected_action == 1:  # DOWN
-        #     self.hunter[1] += 1
-        # if selected_action == 2:  # RIGHT
-        #     self.hunter[0] += 1
-        # if selected_action == 3:  # LEFT
-        #     self.hunter[0] -= 1
-        #
-        # ####### if hunter eats prey #######
-        #
-        # if self.prey == self.hunter:
-        #
-        #     self.letter_color = HUNTER_COLOR
-        #     self.reward = BE_EATEN_REWARD
-        #     self.truncated = True
-        #     self.done = True
-        #     self.info['END'] = "Hunter ate prey"
-        #
-        # else:
+        ###### Move hunter randomly #######
 
-        ########### Move prey ############
+        possible_actions = self._get_possible_actions(self.hunter)
+        selected_action = random.choice(possible_actions)
+        if selected_action == 0:  # UP
+            self.hunter[1] -= 1
+        if selected_action == 1:  # DOWN
+            self.hunter[1] += 1
+        if selected_action == 2:  # RIGHT
+            self.hunter[0] += 1
+        if selected_action == 3:  # LEFT
+            self.hunter[0] -= 1
 
-        if action == 0:  # UP
-            self.prey[1] -= 1
-        if action == 1:  # DOWN
-            self.prey[1] += 1
-        if action == 2:  # RIGHT
-            self.prey[0] += 1
-        if action == 3:  # LEFT
-            self.prey[0] -= 1
+        ####### if hunter eats prey #######
 
-        ############# if died #############
+        if self.prey == self.hunter:
 
-        # if self.prey == self.hunter:
-        #
-        #     self.letter_color = HUNTER_COLOR
-        #     self.reward = BE_EATEN_REWARD
-        #     self.truncated = True
-        #     self.done = True
-        #     self.info['END'] = "Hunter ate prey"
-
-        if self._is_dead(self.prey):
-
-            self.letter_color = (0, 0, 180)
-            self.reward = COLLISION_REWARD
+            self.letter_color = HUNTER_COLOR
+            self.reward = BE_EATEN_REWARD
             self.truncated = True
             self.done = True
-            self.info['END'] = "Prey collided"
-
-        elif self.num_steps >= MAX_STEPS_LIMIT:
-
-            self.letter_color = (0, 0, 180)
-            self.reward = COLLISION_REWARD
-            self.truncated = True
-            self.done = True
-            self.info['END'] = "Step limit excedeed"
-
-        ############ if wins ##############
-
-        elif self.goal == self.prey:
-            self.done = True
-            self.reward = WIN_REWARD
-            self.letter_color = (0, 120, 0)
-            self.info['END'] = "Prey arrived at goal"
-
-        ############# Rewards #############
+            self.info['END'] = "Hunter ate prey"
 
         else:
-            # print(f"{self.prey} -- {self.state_log}")
 
-            self.reward = 0
-            if self.prey in self.state_log:
-                self.reward = -0.01
-            self.state_log.append(self.prey.copy())
+            ########### Move prey ############
 
-            # if not self.min_dist_reached:
-            #
-            #     new_dist_to_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
-            #
-            #     if new_dist_to_goal < self.dist_to_goal:
-            #         self.reward = 1 / new_dist_to_goal
-            #
-            #     self.min_dist_reached = new_dist_to_goal == 1
+            if action == 0:  # UP
+                self.prey[1] -= 1
+            if action == 1:  # DOWN
+                self.prey[1] += 1
+            if action == 2:  # RIGHT
+                self.prey[0] += 1
+            if action == 3:  # LEFT
+                self.prey[0] -= 1
+
+            ############# if died #############
+
+            if self.prey == self.hunter:
+
+                self.letter_color = HUNTER_COLOR
+                self.reward = BE_EATEN_REWARD
+                self.truncated = True
+                self.done = True
+                self.info['END'] = "Hunter ate prey"
+
+            elif self._is_dead(self.prey):
+
+                self.letter_color = (0, 0, 200)
+                self.reward = COLLISION_REWARD
+                self.truncated = True
+                self.done = True
+                self.info['END'] = "Prey collided"
+
+            elif self.num_steps >= MAX_STEPS_LIMIT:
+
+                self.letter_color = (0, 0, 200)
+                self.reward = COLLISION_REWARD
+                self.truncated = True
+                self.done = True
+                self.info['END'] = "Step limit excedeed"
+
+            ############ if wins ##############
+
+            elif self.goal == self.prey:
+                self.done = True
+                self.reward = WIN_REWARD
+                self.letter_color = PREY_COLOR
+                self.info['END'] = "Prey arrived at goal"
+
+            ############# Rewards #############
+
+            else:
+
+                self.reward = 0
+                new_dist_to_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
+
+                # # Si vuelve hacia atrás
+                # if self.prey == self.state_log[-2]:
+                #     self.reward = -0.02
+                #
+                if new_dist_to_goal < self.dist_to_goal:
+                    self.reward = 1 / new_dist_to_goal
+                #
+                # elif self.prey not in self.state_log:
+                #     self.reward = 0.01
+                #
+                # # Almacenar nuevos datos
+                # self.state_log.append(self.prey.copy())
+                self.dist_to_goal = new_dist_to_goal
 
         ########## Visualization ##########
 
@@ -208,6 +212,8 @@ class TrainingEnv(gymnasium.Env):
 
         """ Restaurar el entorno para empezar un nuevo episodio """
 
+        MAP = random.choice(['20random', '50random', 'borders', '2x2', '3x3', 'miniborders', 'minirandom', '5x5'])
+
         # Reload environment distribution
         with open('maps.json', 'r', encoding='utf8') as f:
             selected_map = json.load(f)[MAP]
@@ -216,6 +222,7 @@ class TrainingEnv(gymnasium.Env):
         self.obstacles = selected_map['obstacles']
 
         # Hunter
+        # self.hunter = selected_map['hunter']
         self.hunter = [random.randint(1, 25), random.randint(1, 25)]
         while self.hunter in self.obstacles:
             self.hunter = [random.randint(1, 25), random.randint(1, 25)]
@@ -223,6 +230,7 @@ class TrainingEnv(gymnasium.Env):
         manh_dist_hunter_prey = 0  # Minimal initial dist prey-hunter: 2
 
         # Initial state
+        # self.prey = selected_map['prey']
         self.prey = self.hunter
         while self.prey in self.obstacles or manh_dist_hunter_prey < 2:
             self.prey = [random.randint(1, 25), random.randint(1, 25)]
@@ -231,8 +239,9 @@ class TrainingEnv(gymnasium.Env):
         manh_dist_prey_goal = 0  # Minimal initial dist prey-goal: 2
 
         # Final state
+        # self.goal = selected_map['goal']
         self.goal = self.prey
-        while self.goal in self.obstacles or manh_dist_prey_goal < 2:
+        while self.goal in self.obstacles or manh_dist_prey_goal < 6 or self.goal == self.hunter:
             self.goal = [random.randint(1, 25), random.randint(1, 25)]
             manh_dist_prey_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
 
@@ -241,7 +250,7 @@ class TrainingEnv(gymnasium.Env):
         self.done = False
 
         # State log
-        self.state_log = list()
+        self.state_log = [[-1, -1], self.prey.copy()]
 
         # Reward and number of steps
         self.reward, self.num_steps = 0, 0
@@ -256,7 +265,7 @@ class TrainingEnv(gymnasium.Env):
         if self.render:
 
             # Generate board
-            self.letter_color = (255, 144, 30)
+            self.letter_color = (50, 205, 154)
             self.img = np.zeros((620, 594, 3), dtype=np.uint8)
             self._generate_board()
 
@@ -293,14 +302,14 @@ class TrainingEnv(gymnasium.Env):
         """
 
         observation = list()
-        for i in range(self.prey[0] - 3, self.prey[0] + 3 + 1):
+        for i in range(self.prey[0] - 2, self.prey[0] + 2 + 1):
             row = list()
-            for j in range(self.prey[1] - 3, self.prey[1] + 3 + 1):
+            for j in range(self.prey[1] - 2, self.prey[1] + 2 + 1):
 
                 if [i, j] == self.prey:
-                    row.append(2)
-                # elif [i, j] == self.hunter:
-                #     row.append(-2)
+                    row.append(np.sum(np.abs(np.array(self.prey) - np.array(self.goal))))
+                elif [i, j] == self.hunter:
+                    row.append(-2)
                 elif [i, j] == self.goal:
                     row.append(1)
                 elif [i, j] in self.obstacles or i < 0 or i > 27 or j < 0 or j > 27:
@@ -354,22 +363,22 @@ class TrainingEnv(gymnasium.Env):
         overlay = board.copy()
 
         # Draw prey vision
-        i = (self.prey[0] - 3) * 22
-        j = (self.prey[1] - 3) * 22
-        cv2.rectangle(overlay, (i + 1, j + 1), (i + 153, j + 153), (150, 80, 80), -1)
+        i = (self.prey[0] - 2) * 22
+        j = (self.prey[1] - 2) * 22
+        cv2.rectangle(overlay, (i + 1, j + 1), (i + 109, j + 109), (150, 80, 80), -1)
         board = cv2.addWeighted(overlay, 0.3, board, 1 - 0.3, 0)
 
-        # # Draw hunter vision
-        # i = (self.hunter[0] - 1) * 22
-        # j = (self.hunter[1] - 1) * 22
-        # cv2.rectangle(overlay, (i + 1, j + 1), (i + 65, j + 65), (80, 80, 150), -1)
-        # board = cv2.addWeighted(overlay, 0.3, board, 1 - 0.3, 0)
+        # Draw hunter vision
+        i = (self.hunter[0] - 1) * 22
+        j = (self.hunter[1] - 1) * 22
+        cv2.rectangle(overlay, (i + 1, j + 1), (i + 65, j + 65), (80, 80, 150), -1)
+        board = cv2.addWeighted(overlay, 0.3, board, 1 - 0.3, 0)
 
         # Draw prey
         cv2.circle(board, (self.prey[0] * 22 + 11, self.prey[1] * 22 + 11), 8, PREY_COLOR, -1)
 
         # Draw hunter
-        # cv2.circle(board, (self.hunter[0] * 22 + 11, self.hunter[1] * 22 + 11), 8, HUNTER_COLOR, -1)
+        cv2.circle(board, (self.hunter[0] * 22 + 11, self.hunter[1] * 22 + 11), 8, HUNTER_COLOR, -1)
 
         # Draw steps
         cv2.putText(board, f"Steps: {self.num_steps}", (5, 612),
