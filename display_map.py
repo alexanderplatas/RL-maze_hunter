@@ -12,7 +12,7 @@ import numpy as np
 # goal = [25, 25]
 
 
-MAP = 'minirandom'
+MAP = 'original'
 with open('maps.json', 'r', encoding='utf8') as f:
     map = json.load(f)[MAP]
 obstacles = map['obstacles']
@@ -41,15 +41,15 @@ overlay = board.copy()
 # Draw prey vision
 i = (prey[0] - 2)*22
 j = (prey[1] - 2)*22
-alpha = 0.5
-cv2.rectangle(overlay, (i+1, j+1), (i + 109, j + 109), (120, 80, 80), -1)
+alpha = 0.3
+cv2.rectangle(overlay, (i+1, j+1), (i + 109, j + 109), (150, 80, 80), -1)
 board = cv2.addWeighted(overlay, alpha, board, 1 - alpha, 0)
 
 # Draw hunter vision
 i = (hunter[0] - 1) * 22
 j = (hunter[1] - 1) * 22
 cv2.rectangle(overlay, (i + 1, j + 1), (i + 65, j + 65), (80, 80, 150), -1)
-board = cv2.addWeighted(overlay, 0.5, board, 1 - 0.5, 0)
+board = cv2.addWeighted(overlay, alpha, board, 1 - alpha, 0)
 
 # Draw obstacles
 for obstacle in obstacles:
@@ -69,14 +69,21 @@ cv2.circle(board, (prey[0] * 22 + 11, prey[1] * 22 + 11), 8, PREY_COLOR, -1)
 cv2.putText(board, f"Steps: {num_steps}", (5, 612),
             cv2.FONT_HERSHEY_PLAIN, 1, letter_color, 1, cv2.LINE_AA)
 
+# Draw current reward
+cv2.putText(board, f"Reward: {round(0.0, 4)}", (120, 612),
+            cv2.FONT_HERSHEY_PLAIN, 1, letter_color, 1, cv2.LINE_AA)
+
 # Draw game over
 if game_over:
     cv2.putText(board, 'GAME OVER', (480, 612), cv2.FONT_HERSHEY_PLAIN,
                 1, letter_color, 1, cv2.LINE_AA)
 
+i = (hunter[0] - 2) * 22
+j = (hunter[1] - 2) * 22
 cv2.imshow('MAZE HUNTER', board)
 
-cv2.imwrite(f"{MAP}.png", board)
+cv2.imwrite(f"original.png", board)
+
 # Pulsar cualquier tecla para salir
 q = cv2.waitKey(1)
 while q == -1:

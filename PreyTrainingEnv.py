@@ -9,17 +9,17 @@ import numpy as np
 from gym import spaces
 from gymnasium import spaces
 
-MAX_STEPS_LIMIT = 750
+MAX_STEPS_LIMIT = 1000
 COLLISION_REWARD = -10
 BE_EATEN_REWARD = -20
 WIN_REWARD = 20
+EPSILON = 0
 FPS = 15
 OBSTACLES_COLOR = (100, 100, 100)
 GOAL_COLOR = (0, 150, 0)
 PREY_COLOR = (255, 144, 30)
 HUNTER_COLOR = (30, 144, 255)
-# MAP = 'original'
-
+MAP = 'original'
 
 class TrainingEnv(gymnasium.Env):
 
@@ -33,7 +33,7 @@ class TrainingEnv(gymnasium.Env):
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=-594, high=594, shape=(5, 5), dtype=np.float64)
 
-        MAP = random.choice(['20random', '50random', 'borders', '2x2', 'miniborders', 'minirandom'])
+        # MAP = random.choice(['20random', '50random', 'borders', '2x2', 'miniborders', 'minirandom'])
 
         # Load environment distribution
         with open('maps.json', 'r', encoding='utf8') as f:
@@ -78,7 +78,7 @@ class TrainingEnv(gymnasium.Env):
         self.reward, self.num_steps = 0, 0
 
         # Initial distance to goal
-        self.dist_to_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
+        self.min_dist_to_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
         self.min_dist_reached = False
 
         # Additional information
@@ -95,10 +95,18 @@ class TrainingEnv(gymnasium.Env):
 
         self.num_steps += 1
 
-        ###### Move hunter randomly #######
+        ########### Move hunter ###########
 
-        possible_actions = self._get_possible_actions(self.hunter)
-        selected_action = random.choice(possible_actions)
+        # Randomly
+        # possible_actions = self._get_possible_actions(self.hunter)
+        # selected_action = random.choice(possible_actions)
+
+        # Best action
+        selected_action = self._get_best_hunter_action(self.hunter)
+
+        # ~50% probabilities to get best action
+        # selected_action = random.choice([selected_action, random.choice(possible_actions)])
+
         if selected_action == 0:  # UP
             self.hunter[1] -= 1
         if selected_action == 1:  # DOWN
@@ -119,6 +127,10 @@ class TrainingEnv(gymnasium.Env):
             self.info['END'] = "Hunter ate prey"
 
         else:
+
+            # Aleatoriedad para fomentar la exploración
+            if random.uniform(0, 1) < EPSILON:
+                action = random.choice(self._get_possible_actions(self.prey))
 
             ########### Move prey ############
 
@@ -172,19 +184,24 @@ class TrainingEnv(gymnasium.Env):
                 self.reward = 0
                 new_dist_to_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
 
-                # # Si vuelve hacia atrás
-                # if self.prey == self.state_log[-2]:
-                #     self.reward = -0.02
-                #
-                if new_dist_to_goal < self.dist_to_goal:
+                # Si está más cerca que nunca, 1/dist_to_goal
+                if new_dist_to_goal < self.min_dist_to_goal:
                     self.reward = 1 / new_dist_to_goal
-                #
-                # elif self.prey not in self.state_log:
-                #     self.reward = 0.01
-                #
-                # # Almacenar nuevos datos
-                # self.state_log.append(self.prey.copy())
-                self.dist_to_goal = new_dist_to_goal
+                    self.min_dist_to_goal = new_dist_to_goal
+
+                # Si está más lejos que antes, -1/dist_to_goal
+                # elif new_dist_to_goal > np.sum(np.abs(np.array(self.state_log[-1]) - np.array(self.goal))):
+                #     self.reward = -1 / new_dist_to_goal
+
+                # Si es un estado nuevo, +0.01
+                if self.prey not in self.state_log:
+                    self.reward += 0.01
+
+                # Si vuelve hacia atrás, -0.02
+                elif self.prey == self.state_log[-2]:
+                    self.reward = -0.02
+
+                self.state_log.append(self.prey.copy())
 
         ########## Visualization ##########
 
@@ -199,7 +216,7 @@ class TrainingEnv(gymnasium.Env):
             else:
                 sleep_time = 1 / FPS
             cv2.imshow('Maze Hunter', board)
-            # cv2.imwrite(f"frame_{self.num_steps}.png", board)
+
             cv2.waitKey(1)
             sleep(sleep_time)
 
@@ -212,7 +229,7 @@ class TrainingEnv(gymnasium.Env):
 
         """ Restaurar el entorno para empezar un nuevo episodio """
 
-        MAP = random.choice(['20random', '50random', 'borders', '2x2', '3x3', 'miniborders', 'minirandom', '5x5'])
+        # MAP = random.choice(['20random', '50random', 'borders', '2x2', '3x3', 'miniborders', 'minirandom', '5x5'])
 
         # Reload environment distribution
         with open('maps.json', 'r', encoding='utf8') as f:
@@ -222,28 +239,28 @@ class TrainingEnv(gymnasium.Env):
         self.obstacles = selected_map['obstacles']
 
         # Hunter
-        # self.hunter = selected_map['hunter']
-        self.hunter = [random.randint(1, 25), random.randint(1, 25)]
-        while self.hunter in self.obstacles:
-            self.hunter = [random.randint(1, 25), random.randint(1, 25)]
+        self.hunter = selected_map['hunter']
+        # self.hunter = [random.randint(1, 25), random.randint(1, 25)]
+        # while self.hunter in self.obstacles:
+        #     self.hunter = [random.randint(1, 25), random.randint(1, 25)]
 
         manh_dist_hunter_prey = 0  # Minimal initial dist prey-hunter: 2
 
         # Initial state
-        # self.prey = selected_map['prey']
-        self.prey = self.hunter
-        while self.prey in self.obstacles or manh_dist_hunter_prey < 2:
-            self.prey = [random.randint(1, 25), random.randint(1, 25)]
-            manh_dist_hunter_prey = np.sum(np.abs(np.array(self.prey) - np.array(self.hunter)))
+        self.prey = selected_map['prey']
+        # self.prey = self.hunter
+        # while self.prey in self.obstacles or manh_dist_hunter_prey < 2:
+        #     self.prey = [random.randint(1, 25), random.randint(1, 25)]
+        #     manh_dist_hunter_prey = np.sum(np.abs(np.array(self.prey) - np.array(self.hunter)))
 
         manh_dist_prey_goal = 0  # Minimal initial dist prey-goal: 2
 
         # Final state
-        # self.goal = selected_map['goal']
-        self.goal = self.prey
-        while self.goal in self.obstacles or manh_dist_prey_goal < 6 or self.goal == self.hunter:
-            self.goal = [random.randint(1, 25), random.randint(1, 25)]
-            manh_dist_prey_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
+        self.goal = selected_map['goal']
+        # self.goal = self.prey
+        # while self.goal in self.obstacles or manh_dist_prey_goal < 6 or self.goal == self.hunter:
+        #     self.goal = [random.randint(1, 25), random.randint(1, 25)]
+        #     manh_dist_prey_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
 
         # Game Over
         self.truncated = False
@@ -256,7 +273,7 @@ class TrainingEnv(gymnasium.Env):
         self.reward, self.num_steps = 0, 0
 
         # Initial distance to goal
-        self.dist_to_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
+        self.min_dist_to_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
         self.min_dist_reached = False
 
         # Additional information
@@ -340,6 +357,28 @@ class TrainingEnv(gymnasium.Env):
             possible_actions.append(3)
 
         return possible_actions
+
+    def _get_best_hunter_action(self, state):
+        """
+        Get best action for hunter from given state
+        :param state: current state (2 item list)
+        :return: best action (int)
+            Up      --> 0
+            Down    --> 1
+            Right   --> 2
+            Left    --> 3
+        """
+        possible_actions = list()
+        if not self._is_dead([state[0], state[1] - 1]):
+            possible_actions.append([np.sum(np.abs(np.array([state[0], state[1] - 1]) - np.array(self.prey))), 0])
+        if not self._is_dead([state[0], state[1] + 1]):
+            possible_actions.append([np.sum(np.abs(np.array([state[0], state[1] + 1]) - np.array(self.prey))), 1])
+        if not self._is_dead([state[0] + 1, state[1]]):
+            possible_actions.append([np.sum(np.abs(np.array([state[0] + 1, state[1]]) - np.array(self.prey))), 2])
+        if not self._is_dead([state[0] - 1, state[1]]):
+            possible_actions.append([np.sum(np.abs(np.array([state[0] - 1, state[1]]) - np.array(self.prey))), 3])
+
+        return min(possible_actions)[1]
 
     def _generate_board(self):
         """
