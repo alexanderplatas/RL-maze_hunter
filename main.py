@@ -183,10 +183,10 @@ elif sys.argv[1] == 'eval':
     print(f"\n Fin de la evaluación ({NUM_EPISODES_PER_EVAL} episodes):")
     print(f" - Hunter:")
     print(f"   - Victorias: {hunter_wins}/{NUM_EPISODES_PER_EVAL} ({round(hunter_wins/NUM_EPISODES_PER_EVAL*100, 2)}%)")
-    print(f"   - Media de pasos por victoria: {hunter_wins}/{NUM_EPISODES_PER_EVAL}")
+    print(f"   - Media de pasos por victoria: {hunter_wins/NUM_EPISODES_PER_EVAL}")
     print(f" - Prey:")
     print(f"   - Victorias: {prey_wins}/{NUM_EPISODES_PER_EVAL}({round(prey_wins/NUM_EPISODES_PER_EVAL*100, 2)}%)")
-    print(f"   - Media de pasos por victoria: {hunter_wins}/{NUM_EPISODES_PER_EVAL}")
+    print(f"   - Media de pasos por victoria: {prey_wins/NUM_EPISODES_PER_EVAL}")
     print(f"Media total de pasos por episodio: {round(total_steps/NUM_EPISODES_PER_EVAL, 2)}")
 
 else:
