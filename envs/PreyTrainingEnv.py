@@ -1,6 +1,4 @@
 import json
-import random
-from collections import deque
 from time import sleep
 
 import cv2
@@ -9,31 +7,32 @@ import numpy as np
 from gym import spaces
 from gymnasium import spaces
 
-MAX_STEPS_LIMIT = 1000
+MAX_STEPS_LIMIT = 500
+
 COLLISION_REWARD = -10
 BE_EATEN_REWARD = -20
 WIN_REWARD = 20
-EPSILON = 0
+
 FPS = 15
+MAP = 'original'
+
 OBSTACLES_COLOR = (100, 100, 100)
 GOAL_COLOR = (0, 150, 0)
 PREY_COLOR = (255, 144, 30)
 HUNTER_COLOR = (30, 144, 255)
-MAP = 'original'
 
-class TrainingEnv(gymnasium.Env):
+
+class PreyTrainingEnv(gymnasium.Env):
 
     def __init__(self, render=False):
 
         """ Inicialización del entorno """
 
-        super(TrainingEnv, self).__init__()
+        super(PreyTrainingEnv, self).__init__()
 
         # Action and observation spaces
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=-594, high=594, shape=(5, 5), dtype=np.float64)
-
-        # MAP = random.choice(['20random', '50random', 'borders', '2x2', 'miniborders', 'minirandom'])
 
         # Load environment distribution
         with open('maps.json', 'r', encoding='utf8') as f:
@@ -42,26 +41,14 @@ class TrainingEnv(gymnasium.Env):
         # Obstacles
         self.obstacles = selected_map['obstacles']
 
-        # Hunter
-        self.hunter = [random.randint(1, 25), random.randint(1, 25)]
-        while self.hunter in self.obstacles:
-            self.hunter = [random.randint(1, 25), random.randint(1, 25)]
+        # Hunter state
+        self.hunter = selected_map['hunter']
 
-        manh_dist_hunter_prey = 0  # Minimal initial dist prey-hunter: 2
+        # Prey state
+        self.prey = selected_map['prey']
 
-        # Initial state
-        self.prey = self.hunter
-        while self.prey in self.obstacles or manh_dist_hunter_prey < 2:
-            self.prey = [random.randint(1, 25), random.randint(1, 25)]
-            manh_dist_hunter_prey = np.sum(np.abs(np.array(self.prey) - np.array(self.hunter)))
-
-        manh_dist_prey_goal = 0  # Minimal initial dist prey-goal: 2
-
-        # Final state
-        self.goal = self.prey
-        while self.goal in self.obstacles or manh_dist_prey_goal < 2 or self.goal == self.hunter:
-            self.goal = [random.randint(1, 25), random.randint(1, 25)]
-            manh_dist_prey_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
+        # Goal state
+        self.goal = selected_map['goal']
 
         # Visualize game
         self.render = render
@@ -79,19 +66,25 @@ class TrainingEnv(gymnasium.Env):
 
         # Initial distance to goal
         self.min_dist_to_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
-        self.min_dist_reached = False
 
         # Additional information
         self.info = {"END": ""}
 
+        # Generate board
         if self.render:
-            # Generate board
             self.img = np.zeros((620, 594, 3), dtype=np.uint8)
             self._generate_board()
 
-    """ Realizar un paso sobre el entorno, action = [prey_action, hunter_action] """
-
     def step(self, action):
+        """
+        Take given action in environment
+        :param action: action to take
+            Up      --> 0
+            Down    --> 1
+            Right   --> 2
+            Left    --> 3
+        :return: new observation, reward, truncated, done and info
+        """
 
         self.num_steps += 1
 
@@ -127,10 +120,6 @@ class TrainingEnv(gymnasium.Env):
             self.info['END'] = "Hunter ate prey"
 
         else:
-
-            # Aleatoriedad para fomentar la exploración
-            if random.uniform(0, 1) < EPSILON:
-                action = random.choice(self._get_possible_actions(self.prey))
 
             ########### Move prey ############
 
@@ -189,10 +178,6 @@ class TrainingEnv(gymnasium.Env):
                     self.reward = 1 / new_dist_to_goal
                     self.min_dist_to_goal = new_dist_to_goal
 
-                # Si está más lejos que antes, -1/dist_to_goal
-                # elif new_dist_to_goal > np.sum(np.abs(np.array(self.state_log[-1]) - np.array(self.goal))):
-                #     self.reward = -1 / new_dist_to_goal
-
                 # Si es un estado nuevo, +0.01
                 if self.prey not in self.state_log:
                     self.reward += 0.01
@@ -229,38 +214,21 @@ class TrainingEnv(gymnasium.Env):
 
         """ Restaurar el entorno para empezar un nuevo episodio """
 
-        # MAP = random.choice(['20random', '50random', 'borders', '2x2', '3x3', 'miniborders', 'minirandom', '5x5'])
-
-        # Reload environment distribution
+        # Load environment distribution
         with open('maps.json', 'r', encoding='utf8') as f:
             selected_map = json.load(f)[MAP]
 
         # Obstacles
         self.obstacles = selected_map['obstacles']
 
-        # Hunter
+        # Hunter state
         self.hunter = selected_map['hunter']
-        # self.hunter = [random.randint(1, 25), random.randint(1, 25)]
-        # while self.hunter in self.obstacles:
-        #     self.hunter = [random.randint(1, 25), random.randint(1, 25)]
 
-        manh_dist_hunter_prey = 0  # Minimal initial dist prey-hunter: 2
-
-        # Initial state
+        # Prey state
         self.prey = selected_map['prey']
-        # self.prey = self.hunter
-        # while self.prey in self.obstacles or manh_dist_hunter_prey < 2:
-        #     self.prey = [random.randint(1, 25), random.randint(1, 25)]
-        #     manh_dist_hunter_prey = np.sum(np.abs(np.array(self.prey) - np.array(self.hunter)))
 
-        manh_dist_prey_goal = 0  # Minimal initial dist prey-goal: 2
-
-        # Final state
+        # Goal state
         self.goal = selected_map['goal']
-        # self.goal = self.prey
-        # while self.goal in self.obstacles or manh_dist_prey_goal < 6 or self.goal == self.hunter:
-        #     self.goal = [random.randint(1, 25), random.randint(1, 25)]
-        #     manh_dist_prey_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
 
         # Game Over
         self.truncated = False
@@ -274,14 +242,12 @@ class TrainingEnv(gymnasium.Env):
 
         # Initial distance to goal
         self.min_dist_to_goal = np.sum(np.abs(np.array(self.prey) - np.array(self.goal)))
-        self.min_dist_reached = False
 
         # Additional information
         self.info = {"END": ""}
 
+        # Generate board
         if self.render:
-
-            # Generate board
             self.letter_color = (50, 205, 154)
             self.img = np.zeros((620, 594, 3), dtype=np.uint8)
             self._generate_board()
