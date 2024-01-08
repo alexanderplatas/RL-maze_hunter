@@ -19,25 +19,25 @@
 ![3x3](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/3x3.png?raw=true)
 
 ## Mapa 5x5
-![3x3](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/5x5.png?raw=true)
+![5x5](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/5x5.png?raw=true)
 
 ## Mapa 11x11
-![3x3](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/11x11.png?raw=true)
+![11x11](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/11x11.png?raw=true)
 
 ## Mapa 20random
-![3x3](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/20random.png?raw=true)
+![20random](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/20random.png?raw=true)
 
 ## Mapa 50random
-![3x3](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/50random.png?raw=true)
+![50random](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/50random.png?raw=true)
 
 ## Mapa 100random
-![3x3](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/100random.png?raw=true)
+![100random](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/100random.png?raw=true)
 
 ## Mapa 200random
-![3x3](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/200random.png?raw=true)
+![200random](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/200random.png?raw=true)
 
 ## Mapa onewall
-![3x3](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/onewall.png?raw=true)
+![onewall](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/onewall.png?raw=true)
 
 ## Mapa twowall
-![3x3](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/twowall.png?raw=true)
+![twowall](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/twowall.png?raw=true)
