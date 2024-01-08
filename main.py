@@ -7,11 +7,11 @@ from stable_baselines3 import PPO
 from envs.HunterTrainingEnv import HunterTrainingEnv
 from envs.MazeEnv import MazeEnv
 from envs.PreyTrainingEnv import PreyTrainingEnv
-
+from tqdm import tqdm
 
 ##################### PARAMS #########################
 
-TOTAL_TIMESTEPS = 10_000
+TOTAL_TIMESTEPS = 100_000
 NUM_EVALUATIONS = 10
 NUM_EPISODES_PER_EVAL = 5
 
@@ -98,7 +98,7 @@ if sys.argv[1] == 'train':
 
     if sys.argv[2] == 'prey':
 
-        env = PreyTrainingEnv(render=False)
+        env = PreyTrainingEnv(render=True)
 
         # New agents
         # model = DQN("MlpPolicy", env, verbose=0)
@@ -136,7 +136,7 @@ if sys.argv[1] == 'train':
 
 elif sys.argv[1] == 'eval':
 
-    env = MazeWrapper(MazeEnv(render=True))
+    env = MazeWrapper(MazeEnv(render=False))
 
     # Load prey
     prey_agent = PPO.load("models/prey.model")
@@ -144,7 +144,14 @@ elif sys.argv[1] == 'eval':
     # Load hunter
     hunter_agent = PPO.load("models/hunter.model")
 
-    for i in range(NUM_EVALUATIONS):
+    hunter_wins = 0
+    prey_wins = 0
+
+    hunter_wins_steps = 0
+    prey_wins_steps = 0
+    total_steps = 0
+
+    for i in tqdm(range(NUM_EPISODES_PER_EVAL)):
 
         observations, _ = env.reset()
         n_steps = 0
@@ -163,6 +170,24 @@ elif sys.argv[1] == 'eval':
             print(f' - Total steps: {n_steps}')
             print(f' - Prey Reward: {rewards[0]}')
             print(f' - Hunter Reward: {rewards[1]}')
+
+            if info['winner'] == 'Hunter':
+                hunter_wins += 1
+                hunter_wins_steps += n_steps
+            elif info['winner'] == 'Prey':
+                prey_wins += 1
+                prey_wins_steps += n_steps
+
+            total_steps += n_steps
+
+    print(f"\n Fin de la evaluación ({NUM_EPISODES_PER_EVAL} episodes):")
+    print(f" - Hunter:")
+    print(f"   - Victorias: {hunter_wins}/{NUM_EPISODES_PER_EVAL} ({round(hunter_wins/NUM_EPISODES_PER_EVAL*100, 2)}%)")
+    print(f"   - Media de pasos por victoria: {hunter_wins}/{NUM_EPISODES_PER_EVAL}")
+    print(f" - Prey:")
+    print(f"   - Victorias: {prey_wins}/{NUM_EPISODES_PER_EVAL}({round(prey_wins/NUM_EPISODES_PER_EVAL*100, 2)}%)")
+    print(f"   - Media de pasos por victoria: {hunter_wins}/{NUM_EPISODES_PER_EVAL}")
+    print(f"Media total de pasos por episodio: {round(total_steps/NUM_EPISODES_PER_EVAL, 2)}")
 
 else:
     print(" Incorrect argument")
