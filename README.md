@@ -1,5 +1,7 @@
 # MAZE HUNTER
 
+![alt text](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/gameplay_example.gif?raw=true)
+
 ## Aprendizaje Reforzado Multiagente en un Entorno de Laberinto
 
 Este repositorio contiene código para entrenar y evaluar agentes en un entorno de laberinto utilizando la biblioteca Stable Baselines3.
@@ -66,4 +68,3 @@ python main.py train hunter
 python main.py eval
 ```
 
-![alt text](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/original.png?raw=true)
