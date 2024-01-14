@@ -1,4 +1,4 @@
-# MAZE HUNTER
+# MAZE HUNTER - Reinforcement Learning Environment
 
 ![alt text](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/gameplay_example.gif?raw=true)
 
