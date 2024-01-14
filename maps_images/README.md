@@ -40,4 +40,4 @@
 ![onewall](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/onewall.png?raw=true)
 
 ## Mapa twowall
-![twowall](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/twowall.png?raw=true)
+![twowall](https://github.com/alexanderplatas/RL-maze_hunter/blob/main/maps_images/twowalls.png?raw=true)
